@@ -23,19 +23,39 @@ find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(tf2_msgs REQUIRED)
-find_package(realsense2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
+
+# Find librealsense2
+find_library(REALSENSE2_LIBRARY
+  NAMES realsense2
+  PATHS /usr/lib/x86_64-linux-gnu
+  NO_DEFAULT_PATH
+)
+
+if(NOT REALSENSE2_LIBRARY)
+  message(FATAL_ERROR "librealsense2 not found")
+endif()
+
+find_path(REALSENSE2_INCLUDE_DIR
+  NAMES librealsense2/rs.hpp
+  PATHS /usr/include
+  NO_DEFAULT_PATH
+)
+
+if(NOT REALSENSE2_INCLUDE_DIR)
+  message(FATAL_ERROR "librealsense2 headers not found")
+endif()
 
 find_package(Boost COMPONENTS system REQUIRED)
 find_package(PCL COMPONENTS common REQUIRED)
 find_package(PkgConfig)
 pkg_search_module(Eigen3 REQUIRED eigen3)
 
-find_library(realsense2_LIBRARIES realsense2)
-find_path(realsense2_INCLUDE_DIRS librealsense2/rs.hpp)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(tf2_sensor_msgs REQUIRED)
 
 set(DEPENDENCIES
   rclcpp
@@ -44,18 +64,17 @@ set(DEPENDENCIES
   sensor_msgs 
   tf2_msgs
   tf2_ros
-  realsense2 
+  tf2_geometry_msgs
+  tf2_sensor_msgs
   pcl_conversions
   cv_bridge
   image_transport
 )
 
-
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/include
-  ${realsense2_INCLUDE_DIRS}
+  ${REALSENSE2_INCLUDE_DIR}
   ${EIGEN_INCLUDE_DIRS}
-
 )
 
 # Install launch files.
@@ -69,10 +88,6 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}/
 )
 
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
-
 ## rs_t265_node
 add_executable(rs_t265_node src/rs_t265_node.cpp)
 ament_target_dependencies(rs_t265_node ${DEPENDENCIES})
@@ -80,6 +95,10 @@ ament_target_dependencies(rs_t265_node ${DEPENDENCIES})
 target_include_directories(rs_t265_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
+
+target_link_libraries(rs_t265_node
+  ${REALSENSE2_LIBRARY}
+)
 
 install(TARGETS rs_t265_node
   DESTINATION lib/${PROJECT_NAME})
@@ -92,11 +111,11 @@ add_executable(rs_d435_node
 ament_target_dependencies(rs_d435_node ${DEPENDENCIES})
 
 target_link_libraries(rs_d435_node
+  ${REALSENSE2_LIBRARY}
   ${Boost_SYSTEM_LIBRARY}  # pcl_conversions requires this
   ${OpenCV_LIBRARIES}
   ${PCL_LIBRARIES}
   ${SDL2_LIBRARIES}
-
 )
 
 target_include_directories(rs_d435_node PUBLIC
@@ -106,15 +125,20 @@ target_include_directories(rs_d435_node PUBLIC
 install(TARGETS rs_d435_node
   DESTINATION lib/${PROJECT_NAME})
 
+## rs_enumerate_devices
+add_executable(rs_enumerate_devices src/rs_enumerate_devices.cpp)
+ament_target_dependencies(rs_enumerate_devices ${DEPENDENCIES})
+
+target_link_libraries(rs_enumerate_devices
+  ${REALSENSE2_LIBRARY}
+)
+
+install(TARGETS rs_enumerate_devices
+  DESTINATION lib/${PROJECT_NAME})
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # uncomment the line when a copyright and license is not present in all source files
-  #set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # uncomment the line when this package is not in a git repo
-  #set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_package()
+ament_package() 
