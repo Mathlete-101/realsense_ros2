@@ -15,6 +15,17 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+# Run librealsense installation script
+execute_process(
+  COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/../libuvc_installation.sh
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
+  RESULT_VARIABLE REALSENSE_RESULT
+)
+
+if(NOT REALSENSE_RESULT EQUAL 0)
+  message(FATAL_ERROR "Failed to build librealsense")
+endif()
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -28,26 +39,43 @@ find_package(pcl_conversions REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
 
-# Find librealsense2
-find_library(REALSENSE2_LIBRARY
-  NAMES realsense2
-  PATHS /usr/lib/x86_64-linux-gnu
-  NO_DEFAULT_PATH
-)
+# Find librealsense2 in local build
+set(REALSENSE2_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/../librealsense2.so.2.53.1)
 
-if(NOT REALSENSE2_LIBRARY)
-  message(FATAL_ERROR "librealsense2 not found")
+if(NOT EXISTS ${REALSENSE2_LIBRARY})
+  message(FATAL_ERROR "librealsense2 not found at ${REALSENSE2_LIBRARY}")
 endif()
 
-find_path(REALSENSE2_INCLUDE_DIR
-  NAMES librealsense2/rs.hpp
-  PATHS /usr/include
-  NO_DEFAULT_PATH
+# Set include directory directly since we know where it is
+set(REALSENSE2_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../libuvc_build/librealsense-2.53.1/include)
+
+if(NOT EXISTS ${REALSENSE2_INCLUDE_DIR}/librealsense2/rs.hpp)
+  message(FATAL_ERROR "librealsense2 headers not found at ${REALSENSE2_INCLUDE_DIR}/librealsense2/rs.hpp")
+endif()
+
+# Set RPATH to find libraries at runtime
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}")
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# Install librealsense2 library
+install(FILES ${REALSENSE2_LIBRARY}
+  DESTINATION lib/${PROJECT_NAME}
 )
 
-if(NOT REALSENSE2_INCLUDE_DIR)
-  message(FATAL_ERROR "librealsense2 headers not found")
-endif()
+# Create symlinks for the library
+install(CODE "
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E create_symlink
+      librealsense2.so.2.53.1
+      ${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}/librealsense2.so.2.53
+  )
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E create_symlink
+      librealsense2.so.2.53
+      ${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}/librealsense2.so
+  )
+")
 
 find_package(Boost COMPONENTS system REQUIRED)
 find_package(PCL COMPONENTS common REQUIRED)
