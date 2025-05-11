@@ -14,7 +14,7 @@
 # realsense_ros2
 Ros 2 wrapper for intel realsense cameras d435 and t265.
 
-This wrapper's implementation is specially developed with the objective of running it in Nvidia's Jetson Nano, however it should also work on any other platform running Ubuntu 18.04 and 20.04.
+This wrapper's implementation is specially developed with the objective of running it in Nvidia's Jetson Nano, however it should also work on any other platform running Ubuntu 22.04.
 
 By running this wrapper you would be able to obtain:
 
@@ -22,17 +22,13 @@ By running this wrapper you would be able to obtain:
 * Pointcloud from the realsense d435 depth stereo camera
 * Depth Image from the realsense d435 depth stereo camera
 
-**Tested on Jetson Nano:
-L4T 32.4.3 [ JetPack 4.4 ]
-   Ubuntu 18.04.4 LTS
-   Kernel Version: 4.9.140-tegra 
-   ROS 2 Eloquent**
-
-**Tested on Ubuntu 20.04 amd64:
-ROS2 Foxy**
+**Tested on Ubuntu 22.04 amd64:
+ROS2 Humble
+librealsense 2.53**
 
 ## Requirements
-* ROS2 eloquent or foxy
+* ROS2 Humble
+* librealsense 2.53
 
 ## Installation
 1. Install librealsense2 as per the official [instructions](https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md).
