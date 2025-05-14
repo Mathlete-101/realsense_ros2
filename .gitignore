@@ -1,3 +1,7 @@
 librealsense_build
 *.so*
 libuvc_build
+
+build/
+install/
+log/
